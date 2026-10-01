@@ -3,10 +3,11 @@ import type { Plot } from '../types/plot';
 import type { TreeRecord } from '../types/tree';
 import type { RegenShrub } from '../types/regen';
 import type { RecheckDiff } from '../types/recheck';
+import type { Adjudication, ArchiveChange, ReconBatch, ResourcePatch } from '../types/recon';
 import { newId } from './id';
 
 export const DB_NAME = 'gbforestplot';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 export const LS_VERSION_KEY = 'gbforestplot:db-version';
 
 class ForestPlotDB extends Dexie {
@@ -14,6 +15,10 @@ class ForestPlotDB extends Dexie {
   trees!: Table<TreeRecord, string>;
   regens!: Table<RegenShrub, string>;
   rechecks!: Table<RecheckDiff, string>;
+  patches!: Table<ResourcePatch, string>;
+  reconBatches!: Table<ReconBatch, string>;
+  adjudications!: Table<Adjudication, string>;
+  archiveChanges!: Table<ArchiveChange, string>;
 
   constructor() {
     super(DB_NAME);
@@ -46,6 +51,17 @@ class ForestPlotDB extends Dexie {
             if (row.measuredAt === undefined) row.measuredAt = Date.now();
           });
       });
+    // v3：林草资源图斑对账回传包、批次、裁定结果与档案变更历史
+    this.version(3).stores({
+      plots: 'id, plotNo, locality, forestType, surveyRound, locked, createdAt',
+      trees: 'id, plotId, treeNo, species, round, status, measuredAt',
+      regens: 'id, plotId, layer, species, round, heightCm',
+      rechecks: 'id, plotId, baseRound, targetRound, treeNo, generatedAt',
+      patches: '&id, batchNo, patchNo, plotNo, importedAt',
+      reconBatches: '&batchNo, source, year, status, importedAt',
+      adjudications: '&id, batchNo, patchNo, plotId, status, matchBy, decidedAt',
+      archiveChanges: '&id, plotId, plotNo, field, batchNo, changedAt',
+    });
   }
 }
 
@@ -86,6 +102,10 @@ export async function ensureSeedData(): Promise<void> {
   const day = 24 * 3600 * 1000;
   const plotId = newId('plot');
   const plot2Id = newId('plot');
+  const plot3Id = newId('plot');
+  const plot4Id = newId('plot');
+  const plot5Id = newId('plot');
+  const plot6Id = newId('plot');
 
   const plots: Plot[] = [
     {
@@ -127,6 +147,86 @@ export async function ensureSeedData(): Promise<void> {
       crew: '调查二组（周砚）',
       locked: false,
       createdAt: now - 120 * day,
+    },
+    {
+      id: plot3Id,
+      plotNo: 'FP-4120',
+      locality: '黑龙江凉水林场 13 林班',
+      lng: 128.8952,
+      lat: 47.1848,
+      shape: '方形',
+      area: 400,
+      elevation: 405,
+      slope: 6,
+      aspect: '东南',
+      forestType: '针阔混交林',
+      canopyDensity: 0.6,
+      dominantSpecies: '红松',
+      surveyRound: 1,
+      surveyedAt: now - 20 * day,
+      crew: '调查一组（顾青、李慕）',
+      locked: false,
+      createdAt: now - 90 * day,
+    },
+    {
+      id: plot4Id,
+      plotNo: 'FP-4121',
+      locality: '黑龙江凉水林场 13 林班',
+      lng: 128.8966,
+      lat: 47.186,
+      shape: '方形',
+      area: 400,
+      elevation: 408,
+      slope: 7,
+      aspect: '南',
+      forestType: '针阔混交林',
+      canopyDensity: 0.58,
+      dominantSpecies: '红松',
+      surveyRound: 1,
+      surveyedAt: now - 20 * day,
+      crew: '调查一组（顾青、李慕）',
+      locked: false,
+      createdAt: now - 90 * day,
+    },
+    {
+      id: plot5Id,
+      plotNo: 'FP-4122',
+      locality: '黑龙江凉水林场 14 林班',
+      lng: 128.905,
+      lat: 47.195,
+      shape: '圆形',
+      area: 350,
+      elevation: 420,
+      slope: 9,
+      aspect: '西南',
+      forestType: '阔叶林',
+      canopyDensity: 0.55,
+      dominantSpecies: '红松',
+      surveyRound: 1,
+      surveyedAt: now - 18 * day,
+      crew: '调查二组（周砚）',
+      locked: false,
+      createdAt: now - 80 * day,
+    },
+    {
+      id: plot6Id,
+      plotNo: 'FP-4123',
+      locality: '黑龙江凉水林场 16 林班',
+      lng: 128.885,
+      lat: 47.175,
+      shape: '方形',
+      area: 400,
+      elevation: 398,
+      slope: 5,
+      aspect: '东',
+      forestType: '针叶林',
+      canopyDensity: 0.62,
+      dominantSpecies: '红松',
+      surveyRound: 1,
+      surveyedAt: now - 15 * day,
+      crew: '调查二组（周砚）',
+      locked: false,
+      createdAt: now - 70 * day,
     },
   ];
 
