@@ -1,6 +1,6 @@
 # sologsb-1121 森林样地调查记录台（gbforestplot）
 
-面向森林资源调查员的固定样地工作台：为样地建档，逐株记录胸径、树高、枝下高与检尺位置，登记更新幼苗与灌木层，并在复查期与上一期数据逐株比对生长量、计算林分因子。纯前端单页应用，数据全部保存在浏览器本地。
+面向森林资源调查员的固定样地工作台：为样地建档，逐株记录胸径、树高、枝下高与检尺位置，登记更新幼苗与灌木层，并在复查期与上一期数据逐株比对生长量、计算林分因子。另设**县林草图斑年度对账中心**，导入县里年度回传的林草资源图斑，按「样地编号 → 改号 → 坐标面积」逐级配对，冲突项列待裁定，由质量员确认后写回正式台账并自动留痕、重算复查比对与林分汇总。纯前端单页应用，数据全部保存在浏览器本地。
 
 ## Docker 一键启动（推荐）
 
@@ -58,12 +58,13 @@ sologsb-1121/
         ├── main.tsx
         ├── index.css
         ├── router/index.tsx
-        ├── types/{plot,tree,regen,recheck}.ts
-        ├── stores/{plot,tree,regen}Store.ts
+        ├── types/{plot,tree,regen,recheck,reconcile}.ts
+        ├── stores/{plot,tree,regen,recon,auth}Store.ts
         ├── components/common/{PlotCard,TreeTable,GrowthDiffTable,RoundTag}.tsx
+        ├── components/reconcile/DecisionModal.tsx
         ├── hooks/{usePlotFilter,useTreeStats}.ts
-        ├── pages/{PlotList,TreeEntry,RegenView,RecheckView,PlotSummary}.tsx
-        └── utils/{db,forestCalc,id}.ts
+        ├── pages/{PlotList,TreeEntry,RegenView,RecheckView,PlotSummary,ReconCenter}.tsx
+        └── utils/{db,forestCalc,id,reconCore,recheck,standSummary,reconcileService}.ts
 ```
 
 ## 页面与路由
@@ -74,17 +75,32 @@ sologsb-1121/
 | `/plots/:id/trees` | 样木录入与清单：径阶分组快速录入、行内改胸径、树种联想、胸径异常提示 | TreeRecord |
 | `/plots/:id/regen` | 更新苗与灌木样方记录，按高度级与株数分组合计 | RegenShrub |
 | `/plots/:id/recheck` | 复查比对：逐株两期胸径/树高与生长量，标记缺失与状态变化，保存比对结果 | RecheckDiff、TreeRecord |
+| `/reconcile` | 县林草图斑年度对账：导入回传包、自动配对、待裁定清单、质量员裁定写回、修订与汇总档案 | ReconBatch、ReconMatch、PlotRevision、StandSummaryRecord |
 | `/summary/:plotId` | 林分因子汇总：每公顷株数、平均胸径、断面积、郁闭度、更新密度，可导出调查记录文本 | Plot、TreeRecord、RegenShrub |
 
 `/` 重定向到 `/plots`，未匹配路由同样兜底到 `/plots`。
 
 ## 数据存储说明
 
-- 数据库名 `gbforestplot`，当前结构版本 **v2**（`localStorage['gbforestplot:db-version']` 记录）。
-- 四张表：`plots`（样地）、`trees`（样木，按期次分行）、`regens`（更新苗与灌木样方）、`rechecks`（复查逐株比对）。
+- 数据库名 `gbforestplot`，当前结构版本 **v3**（`localStorage['gbforestplot:db-version']` 记录）。
+- 八张表：`plots`（样地，含 `formerPlotNo` 曾用号）、`trees`（样木，按期次分行）、`regens`（更新苗与灌木样方）、`rechecks`（复查逐株比对）、`reconBatches`（回传批次，整包 JSON 留档）、`reconMatches`（图斑对账配对项）、`plotRevisions`（样地写回前/后修订履历）、`standSummaries`（林分汇总历版快照）。
 - v1 → v2 迁移：为老样地补 `locked`、`surveyRound`，为老样木补 `round`、`measuredAt`，并新增索引。
+- v2 → v3 迁移：新增对账四表与 `plots.formerPlotNo` 索引，不动既有数据。
 - 容器无状态、不挂载命名卷；清空站点数据即回到初始示范数据。
-- 首次打开灌入 2 个示范样地、11 条样木（含第 1/2 两期，便于直接做复查比对）与 4 条样方记录。
+- 首次打开灌入 8 个示范样地（含邻近对照与各对账场景样地）、11 条样木（含第 1/2 两期，便于直接做复查比对）与 4 条样方记录。
+
+## 县林草图斑年度对账
+
+回传包为 JSON，结构：`{ year, batchNo?, source?, parcels[] }`，每个图斑含 `parcelNo`（图斑号）、`plotNo?`（标注样地号）、`formerPlotNo?`（曾用号）、`lng/lat`、`area`、`dominantSpecies`。可在对账中心载入内置示范包 `sample-county-parcels.json`。
+
+配对与裁定规则：
+
+- **逐级配对**：① 先用样地编号（`plotNo`）精确配对；② 对不上再用曾用号（`formerPlotNo`）识别改号；③ 仍对不上按坐标（150 m 半径）+ 面积兜底，半径内样地均为候选。
+- **待裁定情形**：一个样地落到多个图斑、多个样地对到同一图斑（多候选）、优势树种不一致、改号、坐标/面积偏差超阈、台账无对应样地，一律先列入「待裁定」，编号坐标面积树种完全一致才自动配对。
+- **角色权限**：调查员可导入回传包、查看配对与待裁定清单，但**不能裁定或写回**；只有切换到质量员后，才能对每条作出「采用官方数据写回 / 保留台账 / 按图斑新建样地」的裁定。
+- **幂等与容量**：同一回传包（年度 + 内容指纹）重复导入直接返回既有批次，不重复生成配对项；导入前用 `navigator.storage.estimate()` 预检，容量不足整批拒绝、不写任何数据、原档保留。
+- **写回即重算、旧档可查**：采用官方数据时先存写回前完整样地快照（`plotRevisions`），再改台账；官方面积或优势树种一变，立即重算最近两期复查比对（覆盖 `rechecks`）并生成新版林分汇总（`standSummaries` 追加，不覆盖）。改号自动登记 `formerPlotNo`。
+- 批次原始 JSON 整包留存于 `reconBatches.rawJson`；裁定重复提交不会重复生成修订与汇总。
 
 ## 功能要点
 

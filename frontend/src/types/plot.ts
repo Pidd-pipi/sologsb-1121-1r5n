@@ -10,6 +10,8 @@ export interface Plot {
   id: string;
   /** 样地号 */
   plotNo: string;
+  /** 曾用样地号（县里改号后，用于回传图斑配对） */
+  formerPlotNo?: string;
   locality: string;
   lng: number;
   lat: number;

@@ -1,0 +1,95 @@
+{
+  "year": 2026,
+  "batchNo": "2026-LS-01",
+  "source": "县林草局年度林草资源图斑回传（凉水林场）",
+  "parcels": [
+    {
+      "parcelNo": "TB-2026-0001",
+      "plotNo": "FP-4102",
+      "lng": 128.8934,
+      "lat": 47.1832,
+      "area": 600,
+      "dominantSpecies": "红松 + 紫椴",
+      "forestType": "针阔混交林",
+      "locality": "编号/坐标/面积/树种全部一致（自动配对）"
+    },
+    {
+      "parcelNo": "TB-2026-0002",
+      "plotNo": "FP-4115",
+      "lng": 128.9012,
+      "lat": 47.1901,
+      "area": 500,
+      "dominantSpecies": "蒙古栎",
+      "forestType": "阔叶林",
+      "locality": "编号/坐标/面积/树种全部一致（自动配对）"
+    },
+    {
+      "parcelNo": "TB-2026-0003",
+      "plotNo": "FP-6003",
+      "lng": 128.9501,
+      "lat": 47.2501,
+      "area": 600,
+      "dominantSpecies": "兴安落叶松",
+      "forestType": "针叶林",
+      "locality": "县里改号：FP-6003 已改为 FP-7003"
+    },
+    {
+      "parcelNo": "TB-2026-0004",
+      "lng": 129.0003,
+      "lat": 47.2802,
+      "area": 612,
+      "dominantSpecies": "白桦",
+      "forestType": "阔叶林",
+      "locality": "未标注样地号，按坐标+面积兜底（单候选）"
+    },
+    {
+      "parcelNo": "TB-2026-0005",
+      "lng": 129.0104,
+      "lat": 47.2903,
+      "area": 600,
+      "dominantSpecies": "山杨",
+      "forestType": "阔叶林",
+      "locality": "坐标半径内同时有 FP-7201、FP-7202 两个候选"
+    },
+    {
+      "parcelNo": "TB-2026-0006",
+      "plotNo": "FP-7301",
+      "lng": 129.02,
+      "lat": 47.3,
+      "area": 600,
+      "dominantSpecies": "云冷杉",
+      "forestType": "针叶林",
+      "locality": "编号/坐标/面积一致，优势树种不一致"
+    },
+    {
+      "parcelNo": "TB-2026-0007",
+      "plotNo": "FP-7401",
+      "lng": 129.03,
+      "lat": 47.31,
+      "area": 540,
+      "dominantSpecies": "蒙古栎",
+      "forestType": "阔叶林",
+      "locality": "官方面积由 600 调整为 540 m²"
+    },
+    {
+      "parcelNo": "TB-2026-0008",
+      "plotNo": "FP-7401",
+      "lng": 129.0302,
+      "lat": 47.3102,
+      "area": 600,
+      "dominantSpecies": "蒙古栎",
+      "forestType": "阔叶林",
+      "locality": "FP-7401 同时落入第二个图斑（一个样地多个图斑）"
+    },
+    {
+      "parcelNo": "TB-2026-0009",
+      "plotNo": "FP-9001",
+      "lng": 129.5,
+      "lat": 47.6,
+      "area": 667,
+      "dominantSpecies": "白桦",
+      "forestType": "阔叶林",
+      "locality": "台账无对应样地，待质量员裁定是否新建"
+    }
+  ]
+}

@@ -3,10 +3,11 @@ import type { Plot } from '../types/plot';
 import type { TreeRecord } from '../types/tree';
 import type { RegenShrub } from '../types/regen';
 import type { RecheckDiff } from '../types/recheck';
+import type { PlotRevision, ReconBatch, ReconMatch, StandSummaryRecord } from '../types/reconcile';
 import { newId } from './id';
 
 export const DB_NAME = 'gbforestplot';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 export const LS_VERSION_KEY = 'gbforestplot:db-version';
 
 class ForestPlotDB extends Dexie {
@@ -14,6 +15,10 @@ class ForestPlotDB extends Dexie {
   trees!: Table<TreeRecord, string>;
   regens!: Table<RegenShrub, string>;
   rechecks!: Table<RecheckDiff, string>;
+  reconBatches!: Table<ReconBatch, string>;
+  reconMatches!: Table<ReconMatch, string>;
+  plotRevisions!: Table<PlotRevision, string>;
+  standSummaries!: Table<StandSummaryRecord, string>;
 
   constructor() {
     super(DB_NAME);
@@ -46,6 +51,17 @@ class ForestPlotDB extends Dexie {
             if (row.measuredAt === undefined) row.measuredAt = Date.now();
           });
       });
+    // v3：接入县里林草图斑年度对账回传包（批次留档、配对裁定、修订履历、林分汇总快照）
+    this.version(3).stores({
+      plots: 'id, plotNo, formerPlotNo, locality, forestType, surveyRound, locked, createdAt',
+      trees: 'id, plotId, treeNo, species, round, status, measuredAt',
+      regens: 'id, plotId, layer, species, round, heightCm',
+      rechecks: 'id, plotId, baseRound, targetRound, treeNo, generatedAt',
+      reconBatches: 'id, year, batchNo, importedAt',
+      reconMatches: 'id, batchId, parcelNo, plotId, status, reason',
+      plotRevisions: 'id, plotId, plotNo, revisionNo, decidedAt',
+      standSummaries: 'id, plotId, plotNo, revisionNo, generatedAt',
+    });
   }
 }
 
@@ -86,6 +102,45 @@ export async function ensureSeedData(): Promise<void> {
   const day = 24 * 3600 * 1000;
   const plotId = newId('plot');
   const plot2Id = newId('plot');
+  const plot3Id = newId('plot');
+  // 对账回传演示样地（编号、坐标、面积、树种各类差异）
+  const plotRenId = newId('plot');
+  const plotCoordAId = newId('plot');
+  const plotMultiAId = newId('plot');
+  const plotMultiBId = newId('plot');
+  const plotSpeciesId = newId('plot');
+  const plotAreaAId = newId('plot');
+  const plotAreaBId = newId('plot');
+  const mkDemoPlot = (
+    id: string,
+    plotNo: string,
+    formerPlotNo: string | undefined,
+    lng: number,
+    lat: number,
+    area: number,
+    dominantSpecies: string,
+    forestType = '阔叶林',
+  ): Plot => ({
+    id,
+    plotNo,
+    formerPlotNo,
+    locality: `黑龙江凉水林场对账样地 ${plotNo}`,
+    lng,
+    lat,
+    shape: '方形',
+    area,
+    elevation: 400,
+    slope: 8,
+    aspect: '东南',
+    forestType,
+    canopyDensity: 0.6,
+    dominantSpecies,
+    surveyRound: 1,
+    surveyedAt: now - 5 * day,
+    crew: '调查二组（周砚）',
+    locked: false,
+    createdAt: now - 100 * day,
+  });
 
   const plots: Plot[] = [
     {
@@ -128,6 +183,37 @@ export async function ensureSeedData(): Promise<void> {
       locked: false,
       createdAt: now - 120 * day,
     },
+    {
+      id: plot3Id,
+      plotNo: 'FP-4130',
+      locality: '黑龙江凉水林场 12 林班（邻近对照样地）',
+      lng: 128.8946,
+      lat: 47.1844,
+      shape: '方形',
+      area: 600,
+      elevation: 405,
+      slope: 10,
+      aspect: '东',
+      forestType: '针阔混交林',
+      canopyDensity: 0.68,
+      dominantSpecies: '红松',
+      surveyRound: 1,
+      surveyedAt: now - 2 * day,
+      crew: '调查一组（顾青）',
+      locked: false,
+      createdAt: now - 90 * day,
+    },
+    mkDemoPlot(plotRenId, 'FP-7003', 'FP-6003', 128.95, 47.25, 600, '兴安落叶松', '针叶林'),
+    // 坐标兜底（单候选）
+    mkDemoPlot(plotCoordAId, 'FP-7101', undefined, 129.0, 47.28, 600, '白桦'),
+    // 多个样地对到同一图斑（两个邻近样地）
+    mkDemoPlot(plotMultiAId, 'FP-7201', undefined, 129.01, 47.29, 600, '山杨'),
+    mkDemoPlot(plotMultiBId, 'FP-7202', undefined, 129.0108, 47.2906, 600, '白桦'),
+    // 树种不一致
+    mkDemoPlot(plotSpeciesId, 'FP-7301', undefined, 129.02, 47.3, 600, '红松', '针阔混交林'),
+    // 一个样地落到多个图斑（两个同编号图斑）
+    mkDemoPlot(plotAreaAId, 'FP-7401', undefined, 129.03, 47.31, 600, '蒙古栎'),
+    mkDemoPlot(plotAreaBId, 'FP-7402', undefined, 129.04, 47.32, 500, '黄菠萝'),
   ];
 
   type Seed = [string, string, number, number, number, number, TreeRecord['status']];

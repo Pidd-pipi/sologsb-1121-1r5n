@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Badge, Layout, Menu, Space, Spin, Typography } from 'antd';
-import { ExperimentOutlined } from '@ant-design/icons';
+import { ExperimentOutlined, SwapOutlined } from '@ant-design/icons';
 import { usePlotStore } from '../stores/plotStore';
 import { useTreeStore } from '../stores/treeStore';
 import { useRegenStore } from '../stores/regenStore';
@@ -11,6 +11,7 @@ import TreeEntry from '../pages/TreeEntry';
 import RegenView from '../pages/RegenView';
 import RecheckView from '../pages/RecheckView';
 import PlotSummary from '../pages/PlotSummary';
+import ReconCenter from '../pages/ReconCenter';
 
 const { Header, Content } = Layout;
 
@@ -25,6 +26,7 @@ function Shell() {
   const items = useMemo(
     () => [
       { key: '/plots', label: '样地台账' },
+      { key: '/reconcile', label: '图斑对账', icon: <SwapOutlined /> },
       { key: firstPlotId ? `/plots/${firstPlotId}/trees` : '/plots', label: '样木录入' },
       { key: firstPlotId ? `/plots/${firstPlotId}/regen` : '/plots', label: '更新与灌木' },
       { key: firstPlotId ? `/plots/${firstPlotId}/recheck` : '/plots', label: '复查比对' },
@@ -35,10 +37,11 @@ function Shell() {
 
   const selected = useMemo(() => {
     const path = location.pathname;
-    if (path.startsWith('/summary')) return items[4].key;
-    if (path.endsWith('/trees')) return items[1].key;
-    if (path.endsWith('/regen')) return items[2].key;
-    if (path.endsWith('/recheck')) return items[3].key;
+    if (path.startsWith('/reconcile')) return '/reconcile';
+    if (path.startsWith('/summary')) return items[5].key;
+    if (path.endsWith('/trees')) return items[2].key;
+    if (path.endsWith('/regen')) return items[3].key;
+    if (path.endsWith('/recheck')) return items[4].key;
     return '/plots';
   }, [location.pathname, items]);
 
@@ -65,6 +68,7 @@ function Shell() {
         <Routes>
           <Route path="/" element={<Navigate to="/plots" replace />} />
           <Route path="/plots" element={<PlotList />} />
+          <Route path="/reconcile" element={<ReconCenter />} />
           <Route path="/plots/:id/trees" element={<TreeEntry />} />
           <Route path="/plots/:id/regen" element={<RegenView />} />
           <Route path="/plots/:id/recheck" element={<RecheckView />} />
